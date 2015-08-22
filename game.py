@@ -52,6 +52,29 @@ class Alien(Actor):
     def is_dead(self):
         return self.lives == 0
 
+class MenuScene:
+    def __init__(self, game):
+        self.game = game
+        self.sprites = (
+            Cannon('cannon', (WIDTH/2, 420)),
+            Bullet('bullet', (WIDTH/2, 360)),
+            Alien('alien', (WIDTH/2, 220))
+        )
+        
+    def update(self):
+        if keyboard.s:
+            self.game.change_scene(1)
+        
+    def draw(self):
+        screen.clear()
+        
+        for sprite in self.sprites:
+            sprite.draw()
+            
+        screen.draw.text("S P A C E", (140, 40), fontname="space_invaders", fontsize=40)
+        screen.draw.text("I N V A D E R S", (85, 100), fontname="space_invaders", fontsize=40)
+        screen.draw.text("PRESS 'S' TO START", (125, 520), fontname="space_invaders", fontsize=20)
+
 class PlayScene:
     def __init__(self, game):
         self.cannon = Cannon('cannon', (WIDTH / 2, 560))
@@ -110,9 +133,19 @@ class PlayScene:
 
         screen.draw.text("SCORE: %d" % self.score, (20, 20), fontname="space_invaders", fontsize=20)
 
+class GameOverScene:
+    def __init__(self, game):
+        pass
+        
+    def update(self):
+        pass
+        
+    def draw(self):
+        pass
+
 class Game:
     def __init__(self):
-        self.scenes = (PlayScene(self),)
+        self.scenes = (MenuScene(self), PlayScene(self), GameOverScene(self))
         self.current_scene = 0
         
     def update(self):
