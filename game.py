@@ -52,6 +52,21 @@ class Alien(Actor):
     def is_dead(self):
         return self.lives == 0
 
+class Explosion(Actor):
+    def __init__(self, sprite, position):
+        super(Explosion, self).__init__(sprite, position)
+        self.tick_limit = 15
+        self.ticks = 0
+        self.finished = False
+        
+    def update(self):
+        self.ticks += 1
+        if self.ticks > self.tick_limit:
+            self.finished = True
+        
+    def is_finished(self):
+        return self.finished
+        
 class MenuScene:
     def __init__(self, game):
         self.game = game
@@ -77,11 +92,14 @@ class MenuScene:
 
 class PlayScene:
     def __init__(self, game):
+        self.game = game
         self.cannon = Cannon('cannon', (WIDTH / 2, 560))
         self.bullets = []
         self.aliens = []
+        self.explosions = []
         self.score = 0
         self.create_aliens()
+        self.running = True
 
     def create_aliens(self):
         alien_x = 60
@@ -94,33 +112,51 @@ class PlayScene:
             alien_y += 40        
 
     def update(self):
-        if keyboard.right:
-            self.cannon.move_right()
-        elif keyboard.left:
-            self.cannon.move_left()
-      
-        if keyboard.space:
-            if get_ticks() - self.cannon.last_fire > self.cannon.firing_interval:
-                self.bullets.append(Bullet('bullet', self.cannon.pos))
-                sounds.shot.play()
-                self.cannon.last_fire = get_ticks()      
+        if self.running:
+            if keyboard.right:
+                self.cannon.move_right()
+            elif keyboard.left:
+                self.cannon.move_left()
+          
+            if keyboard.space:
+                if get_ticks() - self.cannon.last_fire > self.cannon.firing_interval:
+                    self.bullets.append(Bullet('bullet', self.cannon.pos))
+                    sounds.shot.play()
+                    self.cannon.last_fire = get_ticks()      
 
-        for bullet in self.bullets[:]:
-            bullet.update()
-            if bullet.is_dead():
-                self.bullets.remove(bullet)
-        
-        for alien in self.aliens[:]:
-            alien.update()
             for bullet in self.bullets[:]:
-                if alien.colliderect(bullet):
-                    alien.lives -= 1
-                    if alien.is_dead():
-                        self.aliens.remove(alien)
-                        sounds.explosion.play()
-                        self.score += 100
-                    self.bullets.remove(bullet)                
-        
+                bullet.update()
+                if bullet.is_dead():
+                    self.bullets.remove(bullet)
+            
+            for alien in self.aliens[:]:
+                alien.update()
+                if self.cannon.colliderect(alien):
+                    self.explosions.append(Explosion('cannon_explosion', self.cannon.pos))
+                    sounds.explosion.play()
+                    self.running = False
+                for bullet in self.bullets[:]:
+                    if alien.colliderect(bullet):
+                        alien.lives -= 1
+                        if alien.is_dead():
+                            self.explosions.append(Explosion('alien_explosion', alien.pos))
+                            sounds.explosion.play()
+                            self.aliens.remove(alien)
+                            self.score += 100
+                        self.bullets.remove(bullet)                
+            
+            for explosion in self.explosions[:]:
+                explosion.update()
+                if explosion.is_finished():
+                    self.explosions.remove(explosion)
+        else:
+            for explosion in self.explosions[:]:
+                explosion.update()
+                if explosion.is_finished():
+                    self.explosions.remove(explosion)
+            if len(self.explosions) == 0:
+                self.game.change_scene(2)
+
     def draw(self):
         screen.clear()
         self.cannon.draw()
@@ -130,7 +166,10 @@ class PlayScene:
 
         for alien in self.aliens:
             alien.draw()
-
+        
+        for explosion in self.explosions:
+            explosion.draw()
+            
         screen.draw.text("SCORE: %d" % self.score, (20, 20), fontname="space_invaders", fontsize=20)
 
 class GameOverScene:
