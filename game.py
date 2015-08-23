@@ -29,6 +29,8 @@ EXPLOSION_TICK_LIMIT = 15
 MENU_SCENE = 0
 PLAY_SCENE = 1
 GAME_OVER_SCENE = 2
+
+# The classes used in the game
  
 class Cannon(Actor):
     def __init__(self, sprite, position):
@@ -102,6 +104,9 @@ class MenuScene:
             Bullet('bullet', (WIDTH/2, 360)),
             Alien('alien', (WIDTH/2, 220))
         )
+
+    def init(self):
+        pass
         
     def update(self):
         if keyboard.s:
@@ -120,13 +125,15 @@ class MenuScene:
 class PlayScene:
     def __init__(self, game):
         self.game = game
+
+    def init(self):
         self.cannon = Cannon('cannon', (WIDTH / 2, HEIGHT - PADDING))
         self.bullets = []
         self.aliens = []
         self.explosions = []
         self.score = 0
         self.create_aliens()
-        self.running = True
+        self.running = True        
 
     def create_aliens(self):
         alien_x = LEFTMOST_ALIEN_X
@@ -137,16 +144,7 @@ class PlayScene:
                 alien_x += ALIEN_X_DISTANCE
             alien_x = LEFTMOST_ALIEN_X
             alien_y += ALIEN_Y_DISTANCE        
-    
-    def reset(self):
-        self.cannon = Cannon('cannon', (WIDTH / 2, HEIGHT - PADDING))
-        self.bullets = []
-        self.aliens = []
-        self.explosions = []
-        self.score = 0
-        self.create_aliens()
-        self.running = True        
-        
+            
     def update(self):
         if self.running:
             if keyboard.right:
@@ -189,7 +187,7 @@ class PlayScene:
                     self.explosions.remove(explosion)
             
             if len(self.aliens) == 0 and len(self.explosions) == 0:
-                self.game.scenes[GAME_OVER_SCENE].set_message("YOU WON!!!!!", "#00FFFF")
+                self.game.set_game_over_message("YOU WON!!!!!", "#00FFFF")
                 self.game.change_scene(GAME_OVER_SCENE)
                 
         else:
@@ -198,7 +196,7 @@ class PlayScene:
                 if explosion.is_finished():
                     self.explosions.remove(explosion)
             if len(self.explosions) == 0:
-                self.game.scenes[GAME_OVER_SCENE].set_message("YOU LOST...", "red")
+                self.game.set_game_over_message("YOU LOST...", "red")
                 self.game.change_scene(GAME_OVER_SCENE)
 
     def draw(self):
@@ -222,13 +220,15 @@ class GameOverScene:
         self.message = ""
         self.message_color = "red"
     
+    def init(self):
+        pass
+        
     def set_message(self, message, color):
         self.message = message
         self.message_color = color
     
     def update(self):
         if keyboard.s:
-            self.game.scenes[PLAY_SCENE].reset()
             self.game.change_scene(PLAY_SCENE)
         
     def draw(self):
@@ -250,7 +250,13 @@ class Game:
         self.scenes[self.current_scene].draw()
 
     def change_scene(self, new_scene):
+        self.scenes[new_scene].init()
         self.current_scene = new_scene
+
+    def set_game_over_message(self, message, color):
+        self.scenes[GAME_OVER_SCENE].set_message(message, color)
+        
+# The actual game code
         
 game = Game()
                           
