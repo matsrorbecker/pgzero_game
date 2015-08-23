@@ -110,7 +110,16 @@ class PlayScene:
                 alien_x += 60
             alien_x = 60
             alien_y += 40        
-
+    
+    def reset(self):
+        self.cannon = Cannon('cannon', (WIDTH / 2, 560))
+        self.bullets = []
+        self.aliens = []
+        self.explosions = []
+        self.score = 0
+        self.create_aliens()
+        self.running = True        
+        
     def update(self):
         if self.running:
             if keyboard.right:
@@ -135,6 +144,8 @@ class PlayScene:
                     self.explosions.append(Explosion('cannon_explosion', self.cannon.pos))
                     sounds.explosion.play()
                     self.running = False
+                if alien.bottom >= HEIGHT:
+                    self.running = False
                 for bullet in self.bullets[:]:
                     if alien.colliderect(bullet):
                         alien.lives -= 1
@@ -149,12 +160,18 @@ class PlayScene:
                 explosion.update()
                 if explosion.is_finished():
                     self.explosions.remove(explosion)
+            
+            if len(self.aliens) == 0 and len(self.explosions) == 0:
+                self.game.scenes[2].set_message("YOU WON!!!!!", "#00FFFF")
+                self.game.change_scene(2)
+                
         else:
             for explosion in self.explosions[:]:
                 explosion.update()
                 if explosion.is_finished():
                     self.explosions.remove(explosion)
             if len(self.explosions) == 0:
+                self.game.scenes[2].set_message("YOU LOST...", "red")
                 self.game.change_scene(2)
 
     def draw(self):
@@ -174,13 +191,25 @@ class PlayScene:
 
 class GameOverScene:
     def __init__(self, game):
-        pass
-        
+        self.game = game
+        self.message = ""
+        self.message_color = "red"
+    
+    def set_message(self, message, color):
+        self.message = message
+        self.message_color = color
+    
     def update(self):
-        pass
+        if keyboard.s:
+            self.game.scenes[1].reset()
+            self.game.change_scene(1)
         
     def draw(self):
-        pass
+        screen.clear()
+        screen.draw.text("G A M E", (120, 40), fontname="space_invaders", fontsize=60)
+        screen.draw.text("O V E R", (120, 120), fontname="space_invaders", fontsize=60)
+        screen.draw.text(self.message, (60, 300), fontname="space_invaders", fontsize=60, color=self.message_color)
+        screen.draw.text("PRESS 'S' TO PLAY AGAIN", (100, 520), fontname="space_invaders", fontsize=20)
 
 class Game:
     def __init__(self):
