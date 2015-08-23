@@ -1,30 +1,57 @@
 from pygame.time import get_ticks
 
+# Some 'constants' used in the game
+
 WIDTH = 480
 HEIGHT = 600
 TITLE = '---=== SPACE INVADERS ===---'
+PADDING = 40
 
+CANNON_SPEED = 5
+CANNON_FIRING_INTERVAL = 300
+
+BULLET_SPEED = 20
+
+ALIEN_MAX_MOVEMENT = 40
+ALIEN_X_SPEED = 1
+ALIEN_Y_SPEED = 7
+ALIEN_LIVES = 3
+LEFTMOST_ALIEN_X = 60
+TOP_ALIEN_Y = 40
+ALIEN_ROWS = 5
+ALIENS_PER_ROW = 7
+ALIEN_X_DISTANCE = 60
+ALIEN_Y_DISTANCE = 40
+ALIEN_KILL_SCORE = 100
+
+EXPLOSION_TICK_LIMIT = 15
+
+MENU_SCENE = 0
+PLAY_SCENE = 1
+GAME_OVER_SCENE = 2
+ 
 class Cannon(Actor):
     def __init__(self, sprite, position):
         super(Cannon, self).__init__(sprite, position)
-        self.speed = 5
+        self.speed = CANNON_SPEED
         self.last_fire = 0
-        self.firing_interval = 300
+        self.firing_interval = CANNON_FIRING_INTERVAL
+        
         
     def move_right(self):
         self.x += self.speed
-        if self.right >= WIDTH - 40:
-            self.right = WIDTH - 40
+        if self.right >= WIDTH - PADDING:
+            self.right = WIDTH - PADDING
     
     def move_left(self):
         self.x -= self.speed
-        if self.left <= 40:
-            self.left = 40
+        if self.left <= PADDING:
+            self.left = PADDING
             
 class Bullet(Actor):
     def __init__(self, sprite, position):
         super(Bullet, self).__init__(sprite, position)
-        self.speed = 20
+        self.speed = BULLET_SPEED
   
     def update(self):
         self.y -= self.speed
@@ -35,11 +62,11 @@ class Bullet(Actor):
 class Alien(Actor):
     def __init__(self, sprite, position):
         super(Alien, self).__init__(sprite, position)
-        self.movement = 20
-        self.max_movement = 40
-        self.x_speed = 1
-        self.y_speed = 7
-        self.lives = 3
+        self.max_movement = ALIEN_MAX_MOVEMENT
+        self.movement = ALIEN_MAX_MOVEMENT / 2
+        self.x_speed = ALIEN_X_SPEED
+        self.y_speed = ALIEN_Y_SPEED
+        self.lives = ALIEN_LIVES
          
     def update(self):
         self.x += self.x_speed
@@ -55,7 +82,7 @@ class Alien(Actor):
 class Explosion(Actor):
     def __init__(self, sprite, position):
         super(Explosion, self).__init__(sprite, position)
-        self.tick_limit = 15
+        self.tick_limit = EXPLOSION_TICK_LIMIT
         self.ticks = 0
         self.finished = False
         
@@ -78,7 +105,7 @@ class MenuScene:
         
     def update(self):
         if keyboard.s:
-            self.game.change_scene(1)
+            self.game.change_scene(PLAY_SCENE)
         
     def draw(self):
         screen.clear()
@@ -93,7 +120,7 @@ class MenuScene:
 class PlayScene:
     def __init__(self, game):
         self.game = game
-        self.cannon = Cannon('cannon', (WIDTH / 2, 560))
+        self.cannon = Cannon('cannon', (WIDTH / 2, HEIGHT - PADDING))
         self.bullets = []
         self.aliens = []
         self.explosions = []
@@ -102,17 +129,17 @@ class PlayScene:
         self.running = True
 
     def create_aliens(self):
-        alien_x = 60
-        alien_y = 40
-        for i in range(5):
-            for i in range(7):
+        alien_x = LEFTMOST_ALIEN_X
+        alien_y = TOP_ALIEN_Y
+        for i in range(ALIEN_ROWS):
+            for i in range(ALIENS_PER_ROW):
                 self.aliens.append(Alien('alien', (alien_x, alien_y)))
-                alien_x += 60
-            alien_x = 60
-            alien_y += 40        
+                alien_x += ALIEN_X_DISTANCE
+            alien_x = LEFTMOST_ALIEN_X
+            alien_y += ALIEN_Y_DISTANCE        
     
     def reset(self):
-        self.cannon = Cannon('cannon', (WIDTH / 2, 560))
+        self.cannon = Cannon('cannon', (WIDTH / 2, HEIGHT - PADDING))
         self.bullets = []
         self.aliens = []
         self.explosions = []
@@ -153,7 +180,7 @@ class PlayScene:
                             self.explosions.append(Explosion('alien_explosion', alien.pos))
                             sounds.explosion.play()
                             self.aliens.remove(alien)
-                            self.score += 100
+                            self.score += ALIEN_KILL_SCORE
                         self.bullets.remove(bullet)                
             
             for explosion in self.explosions[:]:
@@ -162,8 +189,8 @@ class PlayScene:
                     self.explosions.remove(explosion)
             
             if len(self.aliens) == 0 and len(self.explosions) == 0:
-                self.game.scenes[2].set_message("YOU WON!!!!!", "#00FFFF")
-                self.game.change_scene(2)
+                self.game.scenes[GAME_OVER_SCENE].set_message("YOU WON!!!!!", "#00FFFF")
+                self.game.change_scene(GAME_OVER_SCENE)
                 
         else:
             for explosion in self.explosions[:]:
@@ -171,8 +198,8 @@ class PlayScene:
                 if explosion.is_finished():
                     self.explosions.remove(explosion)
             if len(self.explosions) == 0:
-                self.game.scenes[2].set_message("YOU LOST...", "red")
-                self.game.change_scene(2)
+                self.game.scenes[GAME_OVER_SCENE].set_message("YOU LOST...", "red")
+                self.game.change_scene(GAME_OVER_SCENE)
 
     def draw(self):
         screen.clear()
@@ -201,8 +228,8 @@ class GameOverScene:
     
     def update(self):
         if keyboard.s:
-            self.game.scenes[1].reset()
-            self.game.change_scene(1)
+            self.game.scenes[PLAY_SCENE].reset()
+            self.game.change_scene(PLAY_SCENE)
         
     def draw(self):
         screen.clear()
@@ -214,7 +241,7 @@ class GameOverScene:
 class Game:
     def __init__(self):
         self.scenes = (MenuScene(self), PlayScene(self), GameOverScene(self))
-        self.current_scene = 0
+        self.current_scene = MENU_SCENE
         
     def update(self):
         self.scenes[self.current_scene].update()
